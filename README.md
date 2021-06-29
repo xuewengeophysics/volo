@@ -1,6 +1,6 @@
 # VOLO: Vision Outlooker for Visual Recognition, [arxiv](https://arxiv.org/abs/2106.13112)
 
-
+Note: Table 5 has a bug, and new version will be updated in ArXiv soon!
 
 This is a PyTorch implementation of our paper. We present Vision Outlooker (VOLO). We show that our VOLO achieves SOTA performance on ImageNet and CityScapes. No extra training data is used in our work.
 
@@ -13,6 +13,8 @@ ImageNet top-1 accuracy comparison with the state-of-the-art (sota) CNN-based an
 </p>
 
 (Updating... codes and models for downstream tasks like semantic segmentation are coming soon.)
+
+### You may be also interested in our MLP-like Vision Transformer: [Vision Permutator](https://github.com/Andrew-Qibin/VisionPermutator).
 
 ## Reference
 ```
@@ -135,7 +137,7 @@ Train volo_d1 on 224 with 310 epoch, acc=84.2
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 ./distributed_train.sh 8 /path/to/imagenet \
   --model volo_d1 --img-size 224 \
-  -b 128 --lr 1.6e-3 --img-size 224 --drop-path 0.1 --apex-amp \
+  -b 128 --lr 1.6e-3 --drop-path 0.1 --apex-amp \
   --token-label --token-label-size 14 --token-label-data /path/to/token_label_data
 ```
 
@@ -162,7 +164,7 @@ Train volo_d2 on 224 with 300 epoch, acc=85.2
 ```
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 ./distributed_train.sh 8 /path/to/imagenet \
   --model volo_d2 --img-size 224 \
-  -b 128 --lr 1.0e-3 --img-size 224 --drop-path 0.2 --apex-amp \
+  -b 128 --lr 1.0e-3 --drop-path 0.2 --apex-amp \
   --token-label --token-label-size 14 --token-label-data /path/to/token_label_data
 ```
 
@@ -185,3 +187,6 @@ We gratefully acknowledge the support of NVIDIA AI Tech Center (NVAITC) to this 
 
 Related project: [T2T-ViT](https://github.com/yitu-opensource/T2T-ViT), [Token_labeling](https://github.com/zihangJiang/TokenLabeling), [pytorch-image-models](https://github.com/rwightman/pytorch-image-models), [official imagenet example](https://github.com/pytorch/examples/tree/master/imagenet)
 
+## LICENSE
+
+This repo is under the Apache-2.0 license. For commercial use, please contact with the authors.
