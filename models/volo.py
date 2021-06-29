@@ -62,6 +62,7 @@ class OutlookAttention(nn.Module):
         self.scale = qk_scale or head_dim**-0.5
 
         self.v = nn.Linear(dim, dim, bias=qkv_bias)
+        ##3**4 * 6 = 486
         self.attn = nn.Linear(dim, kernel_size**4 * num_heads)
 
         self.attn_drop = nn.Dropout(attn_drop)
@@ -72,29 +73,51 @@ class OutlookAttention(nn.Module):
         self.pool = nn.AvgPool2d(kernel_size=stride, stride=stride, ceil_mode=True)
 
     def forward(self, x):
+        ##x.shape为[1, 28, 28, 192]
         B, H, W, C = x.shape
-
+        ipdb.set_trace()
+        ##对应文中Figure2中的Linear
+        ##[1, 28, 28, 192] -> [1, 192, 28, 28]
         v = self.v(x).permute(0, 3, 1, 2)  # B, C, H, W
 
+        ##h, w = 14, 14
         h, w = math.ceil(H / self.stride), math.ceil(W / self.stride)
+        ##对应文中的公式(3)，及Figure2中的Unfold
+        ##1728=192*9；V-delta_ij包含9个元素，由于是通道内信息交互，所以是通道数192*元素个数9
+        ##196=14*14；(28-3+1)/2 + 1 = 14
+        ##[1, 192, 28, 28] -> [1, 1728, 196] -> [1, 6, 32, 9, 196] -> [1, 6, 196, 9, 32]
         v = self.unfold(v).reshape(B, self.num_heads, C // self.num_heads,
                                    self.kernel_size * self.kernel_size,
                                    h * w).permute(0, 1, 4, 3, 2)  # B,H,N,kxk,C/H
 
+        ##对应文中Figure2中的Outlook Attention Generation
+        ##[1, 28, 28, 192] -> [1, 192, 28, 28] -> [1, 192, 14, 14] -> [1, 14, 14, 192]
         attn = self.pool(x.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
+        ##[1, 14, 14, 192] -> [1, 14, 14, 486] -> [1, 196, 6, 9, 9] -> [1, 6, 196, 9, 9]
         attn = self.attn(attn).reshape(
             B, h * w, self.num_heads, self.kernel_size * self.kernel_size,
             self.kernel_size * self.kernel_size).permute(0, 2, 1, 3, 4)  # B,H,N,kxk,kxk
         attn = attn * self.scale
+        ##对应文中的公式(4)中的Softmax(A^i,j)
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
 
+        ##对应文中的公式(4)
+        ##      attn.shape为[1, 6, 196, 9,  9]
+        ##         v.shape为[1, 6, 196, 9, 32]
+        ##(attn @ v).shape为[1, 6, 196, 9, 32]
+        ##[1, 6, 196, 9, 32] -> [1, 6, 32, 9, 196] -> [1, 1728, 196]
         x = (attn @ v).permute(0, 1, 4, 3, 2).reshape(
             B, C * self.kernel_size * self.kernel_size, h * w)
+        ##对应文中的公式(5)，及Figure2中的Fold
+        ##[1, 1728, 196] -> [1, 192, 28, 28]
         x = F.fold(x, output_size=(H, W), kernel_size=self.kernel_size,
                    padding=self.padding, stride=self.stride)
 
+        ##After outlook attention, a linear layer is often adopted as done in self-attention.
+        ##[1, 192, 28, 28] -> [1, 28, 28, 192] -> [1, 28, 28, 192]
         x = self.proj(x.permute(0, 2, 3, 1))
+        ##[1, 28, 28, 192] -> [1, 28, 28, 192]
         x = self.proj_drop(x)
 
         return x
@@ -132,7 +155,9 @@ class Outlooker(nn.Module):
                        act_layer=act_layer)
 
     def forward(self, x):
+        ##对应文中的公式(1)
         x = x + self.drop_path(self.attn(self.norm1(x)))
+        ##对应文中的公式(2)
         x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x
 
