@@ -23,7 +23,7 @@ from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 from timm.models.registry import register_model
 import math
 import numpy as np
-
+import ipdb
 
 def _cfg(url='', **kwargs):
     return {
@@ -568,19 +568,30 @@ class VOLO(nn.Module):
 
     def forward_embeddings(self, x):
         # patch embedding
+        ##[1, 3, 224, 224] -> [1, 192, 28, 28]
+        ##Patch Embedding中的patch_size为8，因此得到的是28(224/8)
         x = self.patch_embed(x)
         # B,C,H,W-> B,H,W,C
+        ##[1, 3, 224, 224] -> [1, 192, 28, 28]
         x = x.permute(0, 2, 3, 1)
         return x
 
     def forward_tokens(self, x):
+        ##x.shape为[1, 28, 28, 192]
+        ##Outlooker:   [1, 28, 28, 192] -> [1, 28, 28, 192]
+        ##Downsample:  [1, 28, 28, 192] -> [1, 14, 14, 384]
+        ##Transformer: [1, 14, 14, 384] -> [1, 14, 14, 384]
+        ##Transformer: [1, 14, 14, 384] -> [1, 14, 14, 384]
+        ##Transformer: [1, 14, 14, 384] -> [1, 14, 14, 384]
         for idx, block in enumerate(self.network):
             if idx == 2:  # add positional encoding after outlooker blocks
                 x = x + self.pos_embed
                 x = self.pos_drop(x)
             x = block(x)
+            ipdb.set_trace()
 
         B, H, W, C = x.shape
+        ##[1, 14, 14, 384] -> [1, 196, 384]
         x = x.reshape(B, -1, C)
         return x
 
@@ -593,7 +604,9 @@ class VOLO(nn.Module):
         return x
 
     def forward(self, x):
+        ##以d1_224为例，x.shape为torch.Size([1, 3, 224, 224])
         # step1: patch embedding
+        ##[1, 3, 224, 224] -> [1, 28, 28, 192]
         x = self.forward_embeddings(x)
 
         # mix token, see token labeling for details.
@@ -611,16 +624,20 @@ class VOLO(nn.Module):
             bbx1, bby1, bbx2, bby2 = 0, 0, 0, 0
 
         # step2: tokens learning in the two stages
+        ##[1, 28, 28, 192] -> [1, 196, 384]
         x = self.forward_tokens(x)
+        ipdb.set_trace()
 
         # step3: post network, apply class attention or not
         if self.post_network is not None:
+            ##[1, 196, 384] -> [1, 197, 384]
             x = self.forward_cls(x)
         x = self.norm(x)
 
         if self.return_mean:  # if no class token, return mean
             return self.head(x.mean(1))
 
+        ##[1, 384] -> [1, 1000]
         x_cls = self.head(x[:, 0])
         if not self.return_dense:
             return x_cls
@@ -660,6 +677,7 @@ def volo_d1(pretrained=False, **kwargs):
     See detail for all args in the class VOLO()
     """
     layers = [4, 4, 8, 2]  # num of layers in the four blocks
+    ##对应文中Table2的dim
     embed_dims = [192, 384, 384, 384]
     num_heads = [6, 12, 12, 12]
     mlp_ratios = [3, 3, 3, 3]
