@@ -102,7 +102,7 @@ load_pretrained_weights(model, opt.weight_path, use_ema=False,
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Validation')
 
-parser.add_argument('-ic', '--image_classification', type=str, default='000000050811.jpg', help='分类模型测试图片')
+parser.add_argument('-ic', '--image_classification', type=str, default='images/000000050811.jpg', help='分类模型测试图片')
 parser.add_argument('--model', '-m', metavar='NAME', default='volo_d1',
                     help='model architecture (default: dpn92)')
 parser.add_argument('--checkpoint', default='weights/', type=str, metavar='PATH',
