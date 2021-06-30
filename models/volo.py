@@ -61,7 +61,9 @@ class OutlookAttention(nn.Module):
         self.stride = stride
         self.scale = qk_scale or head_dim**-0.5
 
+        ##对应文中Figure2中下面的Linear
         self.v = nn.Linear(dim, dim, bias=qkv_bias)
+        ##对应文中Figure2中上面的Linear
         ##3**4 * 6 = 486
         self.attn = nn.Linear(dim, kernel_size**4 * num_heads)
 
@@ -76,7 +78,7 @@ class OutlookAttention(nn.Module):
         ##x.shape为[1, 28, 28, 192]
         B, H, W, C = x.shape
         ipdb.set_trace()
-        ##对应文中Figure2中的Linear
+        ##对应文中Figure2中下面的Linear
         ##[1, 28, 28, 192] -> [1, 192, 28, 28]
         v = self.v(x).permute(0, 3, 1, 2)  # B, C, H, W
 
@@ -94,6 +96,7 @@ class OutlookAttention(nn.Module):
         ##[1, 28, 28, 192] -> [1, 192, 28, 28] -> [1, 192, 14, 14] -> [1, 14, 14, 192]
         attn = self.pool(x.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
         ##[1, 14, 14, 192] -> [1, 14, 14, 486] -> [1, 196, 6, 9, 9] -> [1, 6, 196, 9, 9]
+        ##对应文中Figure2中上面的Linear、Reshape
         attn = self.attn(attn).reshape(
             B, h * w, self.num_heads, self.kernel_size * self.kernel_size,
             self.kernel_size * self.kernel_size).permute(0, 2, 1, 3, 4)  # B,H,N,kxk,kxk
@@ -703,11 +706,13 @@ def volo_d1(pretrained=False, **kwargs):
     """
     layers = [4, 4, 8, 2]  # num of layers in the four blocks
     ##对应文中Table2的dim
+    ##对应文中第4页：The hidden dimension in Outlookers is set to half of that in Transformers
     embed_dims = [192, 384, 384, 384]
     num_heads = [6, 12, 12, 12]
     mlp_ratios = [3, 3, 3, 3]
     downsamples = [True, False, False, False] # do downsampling after first block
     outlook_attention = [True, False, False, False ]
+    ##对应文中第4页：the ratio of Outlooker and Transformer to around 1:3
     # first block is outlooker (stage1), the other three are transformer (stage2)
     model = VOLO(layers,
                  embed_dims=embed_dims,
