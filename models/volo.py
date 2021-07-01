@@ -77,7 +77,7 @@ class OutlookAttention(nn.Module):
     def forward(self, x):
         ##x.shape为[1, 28, 28, 192]
         B, H, W, C = x.shape
-        ipdb.set_trace()
+        # ipdb.set_trace()
         ##对应文中Figure2中下面的Linear
         ##[1, 28, 28, 192] -> [1, 192, 28, 28]
         v = self.v(x).permute(0, 3, 1, 2)  # B, C, H, W
@@ -616,7 +616,7 @@ class VOLO(nn.Module):
                 x = x + self.pos_embed
                 x = self.pos_drop(x)
             x = block(x)
-            ipdb.set_trace()
+            # ipdb.set_trace()
 
         B, H, W, C = x.shape
         ##[1, 14, 14, 384] -> [1, 196, 384]
@@ -654,7 +654,7 @@ class VOLO(nn.Module):
         # step2: tokens learning in the two stages
         ##[1, 28, 28, 192] -> [1, 196, 384]
         x = self.forward_tokens(x)
-        ipdb.set_trace()
+        # ipdb.set_trace()
 
         # step3: post network, apply class attention or not
         if self.post_network is not None:
@@ -667,6 +667,7 @@ class VOLO(nn.Module):
 
         ##[1, 384] -> [1, 1000]
         x_cls = self.head(x[:, 0])
+        self.return_dense = False
         if not self.return_dense:
             return x_cls
 
